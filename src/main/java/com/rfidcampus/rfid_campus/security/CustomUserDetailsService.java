@@ -22,11 +22,12 @@ public class CustomUserDetailsService implements UserDetailsService {
         Estudiante est = estudianteRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("No existe estudiante con email: " + email));
 
-        // Rol fijo "STUDENT"
+        // Rol estudiante
         return User.withUsername(est.getEmail())
                 .password(est.getPasswordHash())
                 .roles("STUDENT")
                 .accountLocked(Boolean.FALSE.equals(est.getActivo()))
                 .build();
+
     }
 }

@@ -15,8 +15,15 @@ public class TransaccionController {
         this.transaccionRepo = transaccionRepo;
     }
 
+    // ✅ CORREGIDO: Usar el método correcto del repositorio
     @GetMapping("/estudiante/{id}")
     public List<Transaccion> historial(@PathVariable Long id) {
-        return transaccionRepo.findByEstudianteId(id);
+        return transaccionRepo.findByEstudianteIdOrderByFechaDesc(id);
+    }
+
+    // ✅ OPCIONAL: Listar todas las transacciones (para administración)
+    @GetMapping("/listar")
+    public List<Transaccion> listarTodas() {
+        return transaccionRepo.findAll();
     }
 }

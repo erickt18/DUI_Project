@@ -10,16 +10,12 @@ public class TarjetaRfid {
 
     @Id
     @Column(name = "tarjeta_uid", length = 32)
-    private String tarjetaUid; // Usamos el UID como PK (tu tabla no tiene id autoincremental)
+    private String tarjetaUid;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_estudiante_fk", nullable = false)
+    @JoinColumn(name = "id_estudiante_fk", nullable = true) // ✅ CAMBIAR A TRUE
     private Estudiante estudiante;
 
     @Column(name = "estado", length = 20)
-    private String estado; // ACTIVA / INACTIVA
-
-    // Si decides que el saldo “vive” en Estudiante, puedes omitir este campo:
-    // @Column(name = "saldo")
-    // private Double saldo;
+    private String estado;
 }

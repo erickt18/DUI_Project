@@ -1,6 +1,7 @@
 package com.rfidcampus.rfid_campus.controller;
 
 import com.rfidcampus.rfid_campus.dto.AsignarTarjetaDTO;
+import com.rfidcampus.rfid_campus.model.Estudiante;
 import com.rfidcampus.rfid_campus.model.TarjetaRfid;
 import com.rfidcampus.rfid_campus.service.TarjetaService;
 import org.springframework.http.ResponseEntity;
@@ -19,52 +20,90 @@ public class TarjetaController {
         this.tarjetaService = tarjetaService;
     }
 
-    //  Registrar tarjeta
+    // ✅ CORREGIDO: Registrar tarjeta sin estudiante
     @PostMapping("/registrar")
-    public ResponseEntity<TarjetaRfid> registrar(@RequestBody TarjetaRfid tarjeta) {
-        return ResponseEntity.ok(tarjetaService.guardar(tarjeta));
+    public ResponseEntity<?> registrar(@RequestBody Map<String, String> body) {
+        try {
+            TarjetaRfid tarjeta = TarjetaRfid.builder()
+                    .tarjetaUid(body.get("tarjetaUid"))
+                    .estado(body.get("estado"))
+                    .estudiante(null) // Sin asignar por ahora
+                    .build();
+            
+            TarjetaRfid saved = tarjetaService.guardar(tarjeta);
+            return ResponseEntity.ok(Map.of(
+                "mensaje", "Tarjeta registrada exitosamente",
+                "tarjetaUid", saved.getTarjetaUid(),
+                "estado", saved.getEstado()
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 
-    //  Asignar tarjeta usando DTO (forma principal)
+    // ✅ Asignar tarjeta usando DTO
     @PutMapping("/asignar")
-    public ResponseEntity<TarjetaRfid> asignarTarjeta(@RequestBody AsignarTarjetaDTO dto) {
-        return ResponseEntity.ok(
-                tarjetaService.asignarTarjeta(dto.getTarjetaUid(), dto.getIdEstudiante()));
+    public ResponseEntity<?> asignarTarjeta(@RequestBody AsignarTarjetaDTO dto) {
+        try {
+            TarjetaRfid tarjeta = tarjetaService.asignarTarjeta(dto.getTarjetaUid(), dto.getIdEstudiante());
+            return ResponseEntity.ok(Map.of(
+                "mensaje", "Tarjeta asignada exitosamente",
+                "tarjetaUid", tarjeta.getTarjetaUid(),
+                "estudiante", tarjeta.getEstudiante().getNombreCompleto()
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 
-    //  (Opcional) Asignar por URL si deseas probar rápido
-    @PutMapping("/asignar/{uid}/{idEstudiante}")
-    public ResponseEntity<TarjetaRfid> asignar(
-            @PathVariable String uid,
-            @PathVariable Long idEstudiante) {
-        return ResponseEntity.ok(tarjetaService.asignarTarjeta(uid, idEstudiante));
-    }
-
-    //  Consultar saldo
+    // ✅ Consultar saldo
     @GetMapping("/saldo/{uid}")
-    public ResponseEntity<Double> consultarSaldo(@PathVariable String uid) {
-        return ResponseEntity.ok(tarjetaService.consultarSaldo(uid));
+    public ResponseEntity<?> consultarSaldo(@PathVariable String uid) {
+        try {
+            Double saldo = tarjetaService.consultarSaldo(uid);
+            return ResponseEntity.ok(Map.of("saldo", saldo));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 
-    //  Listar tarjetas
+    // ✅ Listar tarjetas
     @GetMapping("/listar")
     public List<TarjetaRfid> listar() {
         return tarjetaService.listar();
     }
 
-    //  Recargar saldo
+    // ✅ Recargar saldo
     @PutMapping("/recargar")
-    public ResponseEntity<TarjetaRfid> recargar(@RequestBody Map<String, Object> body) {
-        String uid = (String) body.get("tarjetaUid");
-        Double monto = Double.valueOf(body.get("monto").toString());
-        return ResponseEntity.ok(tarjetaService.recargarSaldo(uid, monto));
+    public ResponseEntity<?> recargar(@RequestBody Map<String, Object> body) {
+        try {
+            String uid = (String) body.get("tarjetaUid");
+            Double monto = Double.valueOf(body.get("monto").toString());
+            Estudiante est = tarjetaService.recargarSaldo(uid, monto);
+            return ResponseEntity.ok(Map.of(
+                "mensaje", "Saldo recargado exitosamente",
+                "estudiante", est.getNombreCompleto(),
+                "nuevoSaldo", est.getSaldo()
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 
-    //  Pago en bar / biblioteca / cafetín
+    // ✅ Pagar
     @PutMapping("/pagar")
-    public ResponseEntity<TarjetaRfid> pagar(@RequestBody Map<String, Object> body) {
-        String uid = (String) body.get("tarjetaUid");
-        Double monto = Double.valueOf(body.get("monto").toString());
-        return ResponseEntity.ok(tarjetaService.pagar(uid, monto));
+    public ResponseEntity<?> pagar(@RequestBody Map<String, Object> body) {
+        try {
+            String uid = (String) body.get("tarjetaUid");
+            Double monto = Double.valueOf(body.get("monto").toString());
+            Estudiante est = tarjetaService.pagar(uid, monto);
+            return ResponseEntity.ok(Map.of(
+                "mensaje", "Pago realizado exitosamente",
+                "estudiante", est.getNombreCompleto(),
+                "nuevoSaldo", est.getSaldo()
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 }

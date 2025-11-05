@@ -45,58 +45,68 @@ public class TarjetaService {
                 .orElseThrow(() -> new RuntimeException("Estudiante no encontrado"));
 
         tarjeta.setEstudiante(estudiante);
+        
+        // Sincronizar UID en estudiante
+        estudiante.setUidTarjeta(tarjetaUid);
+        estudianteRepo.save(estudiante);
+        
         return tarjetaRepo.save(tarjeta);
     }
 
     // ✅ RECARGAR SALDO + REGISTRO AUTOMÁTICO
-    public TarjetaRfid recargarSaldo(String uid, Double monto) {
-        TarjetaRfid tarjeta = tarjetaRepo.findById(uid)
-                .orElseThrow(() -> new RuntimeException("Tarjeta no encontrada"));
+    public Estudiante recargarSaldo(String uid, Double monto) {
+        TarjetaRfid tarjeta = tarjetaRepo.findByTarjetaUidAndEstado(uid, "ACTIVA")
+                .orElseThrow(() -> new RuntimeException("Tarjeta no encontrada o inactiva"));
 
-        tarjeta.setSaldo(tarjeta.getSaldo() + monto);
-        tarjetaRepo.save(tarjeta);
+        Estudiante estudiante = tarjeta.getEstudiante();
+        estudiante.setSaldo(estudiante.getSaldo() + monto);
+        estudianteRepo.save(estudiante);
 
+        // Registrar transacción
         transaccionRepo.save(
                 Transaccion.builder()
-                        .estudiante(tarjeta.getEstudiante())
+                        .estudiante(estudiante)
                         .tipo("RECARGA")
                         .monto(monto)
                         .fecha(LocalDateTime.now())
                         .build()
         );
 
-        return tarjeta;
+        return estudiante;
     }
 
     // ✅ CONSULTAR SALDO
     public Double consultarSaldo(String uid) {
-        TarjetaRfid tarjeta = tarjetaRepo.findById(uid)
-                .orElseThrow(() -> new RuntimeException("Tarjeta no encontrada"));
+        TarjetaRfid tarjeta = tarjetaRepo.findByTarjetaUidAndEstado(uid, "ACTIVA")
+                .orElseThrow(() -> new RuntimeException("Tarjeta no encontrada o inactiva"));
 
-        return tarjeta.getSaldo();
+        return tarjeta.getEstudiante().getSaldo();
     }
 
     // ✅ PAGAR / DESCONTAR SALDO + REGISTRO AUTOMÁTICO
-    public TarjetaRfid pagar(String uid, Double monto) {
-        TarjetaRfid tarjeta = tarjetaRepo.findById(uid)
-                .orElseThrow(() -> new RuntimeException("Tarjeta no encontrada"));
+    public Estudiante pagar(String uid, Double monto) {
+        TarjetaRfid tarjeta = tarjetaRepo.findByTarjetaUidAndEstado(uid, "ACTIVA")
+                .orElseThrow(() -> new RuntimeException("Tarjeta no encontrada o inactiva"));
 
-        if (tarjeta.getSaldo() < monto) {
+        Estudiante estudiante = tarjeta.getEstudiante();
+        
+        if (estudiante.getSaldo() < monto) {
             throw new RuntimeException("Saldo insuficiente");
         }
 
-        tarjeta.setSaldo(tarjeta.getSaldo() - monto);
-        tarjetaRepo.save(tarjeta);
+        estudiante.setSaldo(estudiante.getSaldo() - monto);
+        estudianteRepo.save(estudiante);
 
+        // Registrar transacción
         transaccionRepo.save(
                 Transaccion.builder()
-                        .estudiante(tarjeta.getEstudiante())
+                        .estudiante(estudiante)
                         .tipo("COMPRA_BAR")
                         .monto(monto)
                         .fecha(LocalDateTime.now())
                         .build()
         );
 
-        return tarjeta;
+        return estudiante;
     }
 }

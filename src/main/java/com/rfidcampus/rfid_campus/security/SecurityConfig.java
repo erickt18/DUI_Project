@@ -24,20 +24,21 @@ public class SecurityConfig {
         this.userDetailsService = userDetailsService;
     }
 
-    @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-                .csrf(csrf -> csrf.disable())
-                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll() // login y registro libres
-                        .requestMatchers("/api/bar/**").authenticated() // bar con token
-                        .anyRequest().authenticated())
-                .authenticationProvider(daoAuthProvider())
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+   @Bean
+public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    http
+            .csrf(csrf -> csrf.disable())
+            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authorizeHttpRequests(auth -> auth
+                    .requestMatchers("/api/auth/**").permitAll() // login y registro
+                    .requestMatchers("/api/tarjetas/**").permitAll() // RFID scan sin auth
+                    .requestMatchers("/api/bar/**").permitAll() // Bar sin auth (Arduino)
+                    .anyRequest().authenticated())
+            .authenticationProvider(daoAuthProvider())
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
-        return http.build();
-    }
+    return http.build();
+}
 
     @Bean
     public DaoAuthenticationProvider daoAuthProvider() {
